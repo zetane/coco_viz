@@ -12,7 +12,6 @@ import torchvision.models as models
 from torchvision.utils import save_image
 import zetane as ztn
 import zetane.utils as zutils
-import zetane.ZetaneViz as ZetaneViz
 
 def main():
     normalize = T.Normalize(mean=[0.485, 0.456, 0.406],
@@ -37,10 +36,11 @@ def validate(val_loader, model, criterion):
 
     # switch to evaluate mode
     model.eval()
-    viz.create_model(model, torch.rand((1,3,224,224)))
+    viz.create_torch_model(model, torch.rand((1,3,224,224)))
 
     for i, (inputs, target) in enumerate(val_loader):
         target = target[0]['category_id']
+        end = time.time()
 
         # compute output
         output = model(inputs)
@@ -100,6 +100,26 @@ def accuracy(output, target, topk=(1,)):
         correct_k = correct[:k].view(-1).float().sum(0)
         res.append(correct_k.mul_(100.0 / batch_size))
     return res
+
+class ZetaneViz(object):
+    def __init__(self):
+        self.context = ztn.Context()
+        self.iimage = self.context.image().position(-10.0, 2.5, 0.0).scale(0.25, 0.25, 0.0)
+        self.vmodel = self.context.model()
+        self.context.clear_universe()
+    def show_input(self, inputs):
+        # move NCWH to WHC
+        np_image = np.moveaxis(inputs[0,:,:,:].detach().cpu().numpy(), 0, -1)
+        remapped = zutils.remap(np_image)
+        self.iimage.position(-10.0, 2.5, 0.0).scale(0.25, 0.25, 0.0).update(data=remapped)
+    def create_torch_model(self, model, inputs):
+        import torch
+        self.vmodel.torch(model, inputs).update()
+    def model_inference(self, inputs):
+        self.vmodel.inputs(inputs.detach().cpu().numpy()).update()
+        time.sleep(2)
+    def model_debug(self, inputs):
+        self.vmodel.inputs(inputs.detach().cpu().numpy()).debug()
 
 if __name__ == '__main__':
     main()
