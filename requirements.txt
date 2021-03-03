@@ -1,0 +1,6 @@
+pycocotools
+torch
+torchvision
+
+-f https://download.zetane.com/zetane/index.html
+zetane
